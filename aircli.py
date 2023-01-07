@@ -17,9 +17,10 @@ if __name__ == "__main__":
     parser.add_argument("--flat", help="Flat FITS files to use for a master flat.", type=str, nargs="+")
     parser.add_argument("--masterflat", help="Master flat FITS file. If --flat is specified, it may be overwritten with their resulting master flat.", type=str)
     parser.add_argument("--light", help="Light FITS files to reduce to science images.", type=str, nargs="+")
+    parser.add_argument("--do-sky-subtraction", help="Perform median sky subtraction on the resulting science images.", action="store_true")
     parser.add_argument("--science", help="Folder to save the resulting science images to.", type=str)
     parser.add_argument("--wcs", help="Try to solve the WCS of the science images.", action="store_true")
-    parser.add_argument("--wcs-sciences",  help="Science FITS files to solve WCS for in addation to any resulting science images.", type=str, nargs="+")
+    parser.add_argument("--wcs-sciences",  help="Science FITS files to solve WCS for in addition to any resulting science images.", type=str, nargs="+")
     parser.add_argument("--wcs-ignore-failure", help="Ignore confirmation prompts when WCS solving fails.", action="store_true")
     parser.add_argument("--mosaic", help="Mosaic FITS file to write the resulting mosaic to.", type=str)
     parser.add_argument("--mosaic-sciences", help="Science FITS files to use for a mosaic in addition to any resulting science images.", type=str, nargs="+")
@@ -42,7 +43,7 @@ if __name__ == "__main__":
                 print("The following bias files could not be found:\n" + "\n".join(notexists))
                 exit()
             
-            masterbias = create_masterbias_from_fits_files(args.bias)
+            masterbias = create_masterbias_from_bias_files(args.bias)
             print("The master bias has been created")
             
             if not args.masterbias is None and (not os.path.isfile(args.masterbias) or args.force_overwrite or input(f"The master bias file {args.masterbias} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
@@ -68,10 +69,10 @@ if __name__ == "__main__":
                 print("The following dark files could not be found:\n" + "\n".join(notexists))
                 exit()
             
-            masterdark = create_masterdark_from_fits_files(args.dark, exposure_time_key=args.exposure_time_key, gain_key=args.gain_key)
+            masterdark = create_masterdark_from_dark_files(args.dark, masterbias=masterbias, exposure_time_key=args.exposure_time_key, gain_key=args.gain_key)
             print("The master dark has been created")
             
-            if not args.masterdark is None and (not os.path.isfile(args.masterdark) or args.force_overwrite or input(f"The master dark file {args.masterdark} already exists, do you want to overwrite it? [y/N]").lower() == "y"):
+            if not args.masterdark is None and (not os.path.isfile(args.masterdark) or args.force_overwrite or input(f"The master dark file {args.masterdark} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
                 write_fits_data(args.masterdark, masterdark)
                 print(f"The master dark has been written to {args.masterdark}")
     elif not args.masterdark is None:
@@ -94,13 +95,49 @@ if __name__ == "__main__":
                 print("The following flat files could not be found:\n" + "\n".join(notexists))
                 exit()
             
-            masterflat = create_masterflat_from_fits_files(args.flat, exposure_time_key=args.exposure_time_key, gain_key=args.gain_key, rggb_componentwise=args.rggb_component_wise)
+            masterflat = create_masterflat_from_flat_files(args.flat, masterbias=masterbias, masterdark=masterdark, exposure_time_key=args.exposure_time_key, gain_key=args.gain_key, rggb_componentwise=args.rggb_component_wise)
             print("The master flat has been created")
             
-            if not args.masterflat is None and (not os.path.isfile(args.masterflat) or args.force_overwrite or input(f"The master flat file {args.masterflat} already exists, do you want to overwrite it? [y/N]").lower() == "y"):
+            if not args.masterflat is None and (not os.path.isfile(args.masterflat) or args.force_overwrite or input(f"The master flat file {args.masterflat} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
                 write_fits_data(args.masterflat, masterflat)
                 print(f"The master flat has been written to {args.masterflat}")
     elif not args.masterflat is None:
         masterflat = get_fits_data(args.masterflat)
     else:
         masterflat = None
+    
+    if not args.light is None:
+        print("\n=== Sciences ===")
+        
+        if args.science is None and args.mosaic is None:
+            print("No use for sciences found, skipping")
+            sciences = None
+        else:
+            os.makedirs(args.science, exist_ok=True)
+            
+            notexists = []
+            for lightfile in args.light:
+                if not os.path.isfile(lightfile):
+                    notexists.append(lightfile)
+            if any(notexists):
+                print("The following light files could not be found:\n" + "\n".join(notexists))
+                exit()
+            
+            sciences = []
+            for lightfile in args.light:
+                science = create_science_from_light_file(lightfile, masterbias=masterbias, masterdark=masterdark, masterflat=masterflat, exposure_time_key=args.exposure_time_key, gain_key=args.gain_key, do_sky_subtraction=args.do_sky_subtraction, rggb_componentwise=args.rggb_component_wise)
+                filename = lightfile.replace("\\", "/").split("/")[-1]
+                if filename.endswith(".fits"):
+                    filename = filename[:-5]
+                elif filename.endswith(".fit"):
+                    filename = filename[:-4]
+                outfile = args.science + "/" + filename + ".Science.fits"
+                print(f"The science for light {filename} has been created")
+                
+                sciences.append(science)
+                #Save if WCS doesn't need to be solved later
+                if not args.science is None and not args.wcs and (not os.path.isfile(outfile) or args.force_overwrite or input(f"The science file {outfile} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
+                    write_fits_data(outfile, science)
+                    print(f"The science for light {filename} has been written to {outfile}")
+    else:
+        sciences = None
