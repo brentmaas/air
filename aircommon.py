@@ -40,13 +40,13 @@ def create_masterflat_from_flat_files(flat_files, masterbias=None, masterdark=No
         flat_data[i] = (fits.getdata(flat_files[i]) - masterbias - masterdark * flat_header[exposure_time_key] * flat_header[gain_key]) / flat_header[exposure_time_key] / flat_header[gain_key]
     masterflat = np.median(flat_data, axis=0)
     if rggb_componentwise:
-        masterflat /= np.median(masterflat)
-    else:
         masterflat[::2,::2] /= np.median(masterflat[::2,::2])
         g_median = np.median(np.append(masterflat[1::2,::2], masterflat[::2,1::2]))
         masterflat[1::2,::2] /= g_median
         masterflat[::2,1::2] /= g_median
         masterflat[1::2,1::2] /= np.median(masterflat[1::2,1::2])
+    else:
+        masterflat /= np.median(masterflat)
     return masterflat
 
 def create_science_from_light_file(light_file, masterbias=None, masterdark=None, masterflat=None, exposure_time_key="EXPTIME", gain_key="GAIN", do_sky_subtraction=False, rggb_componentwise=False):
