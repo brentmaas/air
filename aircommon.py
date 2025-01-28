@@ -7,14 +7,23 @@ def get_fits_header(fits_file):
 def get_fits_data(fits_file):
     return fits.getdata(fits_file)
 
-def write_fits_data(fits_file, data):
-    fits.writeto(fits_file, data, overwrite=True)
+def write_fits_data(fits_file, data, header=None):
+    fits.writeto(fits_file, data, header=header, overwrite=True)
+
+def create_masterheader_from_files(fits_files):
+    masterheader = fits.getheader(fits_files[0])
+    for fits_file in fits_files[1:]:
+        header = fits.getheader(fits_file)
+        for card in masterheader:
+            if not card in header or masterheader[card] != header[card]:
+                masterheader.remove(card)
+    return masterheader
 
 def create_masterbias_from_bias_files(bias_files):
-    bias_header = get_fits_header(bias_files[0])
+    bias_header = fits.getheader(bias_files[0])
     masterbias = np.zeros((bias_header["NAXIS2"], bias_header["NAXIS1"]))
     for fits_file in bias_files:
-        masterbias += get_fits_data(fits_file)
+        masterbias += fits.getdata(fits_file)
     masterbias /= len(bias_files)
     return masterbias
 

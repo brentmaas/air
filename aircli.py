@@ -49,7 +49,9 @@ if __name__ == "__main__":
             print("The master bias has been created")
             
             if not args.masterbias is None and (not os.path.isfile(args.masterbias) or args.force_overwrite or input(f"The master bias file {args.masterbias} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
-                write_fits_data(args.masterbias, masterbias)
+                
+                masterbias_header = create_masterheader_from_files(args.bias)
+                write_fits_data(args.masterbias, masterbias, header=masterbias_header)
                 print(f"The master bias has been written to {args.masterbias}")
     elif not args.masterbias is None:
         masterbias = get_fits_data(args.masterbias)
@@ -75,7 +77,8 @@ if __name__ == "__main__":
             print("The master dark has been created")
             
             if not args.masterdark is None and (not os.path.isfile(args.masterdark) or args.force_overwrite or input(f"The master dark file {args.masterdark} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
-                write_fits_data(args.masterdark, masterdark)
+                masterdark_header = create_masterheader_from_files(args.masterdark)
+                write_fits_data(args.masterdark, masterdark, header=masterdark_header)
                 print(f"The master dark has been written to {args.masterdark}")
     elif not args.masterdark is None:
         masterdark = get_fits_data(args.masterdark)
@@ -101,7 +104,8 @@ if __name__ == "__main__":
             print("The master flat has been created")
             
             if not args.masterflat is None and (not os.path.isfile(args.masterflat) or args.force_overwrite or input(f"The master flat file {args.masterflat} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
-                write_fits_data(args.masterflat, masterflat)
+                masterflat_header = create_masterheader_from_files(args.masterflat)
+                write_fits_data(args.masterflat, masterflat, header=masterflat_header)
                 print(f"The master flat has been written to {args.masterflat}")
     elif not args.masterflat is None:
         masterflat = get_fits_data(args.masterflat)
@@ -139,7 +143,7 @@ if __name__ == "__main__":
                 sciences.append(science)
                 #Save if WCS doesn't need to be solved later
                 if not args.science is None and not args.wcs and (not os.path.isfile(outfile) or args.force_overwrite or input(f"The science file {outfile} already exists, do you want to overwrite it? [y/N] ").lower() == "y"):
-                    write_fits_data(outfile, science)
+                    write_fits_data(outfile, science, header=get_fits_header(lightfile))
                     print(f"The science for light {filename} has been written to {outfile}")
     else:
         sciences = None

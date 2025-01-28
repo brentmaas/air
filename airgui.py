@@ -41,7 +41,8 @@ if __name__ == "__main__":
             
             try:
                 masterbias = create_masterbias_from_bias_files(bias_files)
-                write_fits_data(outfile, masterbias)
+                masterbias_header = create_masterheader_from_files(bias_files)
+                write_fits_data(outfile, masterbias, header=masterbias_header)
                 
                 finish_dialog = widgets.QMessageBox(widgets.QMessageBox.Icon.NoIcon, "Done", "The master bias has been created.")
                 finish_dialog.exec()
@@ -119,7 +120,8 @@ if __name__ == "__main__":
                 else:
                     masterbias = None
                 masterdark = create_masterdark_from_dark_files(dark_files, masterbias=masterbias, exposure_time_key=exposure_time_key, gain_key=gain_key)
-                write_fits_data(outfile, masterdark)
+                masterdark_header = create_masterheader_from_files(dark_files)
+                write_fits_data(outfile, masterdark, header=masterdark_header)
                 
                 finish_dialog = widgets.QMessageBox(widgets.QMessageBox.Icon.NoIcon, "Done", "The master dark has been created.")
                 finish_dialog.exec()
@@ -234,7 +236,8 @@ if __name__ == "__main__":
                 else:
                     masterdark = None
                 masterflat = create_masterflat_from_flat_files(flat_files, masterbias=masterbias, masterdark=masterdark, exposure_time_key=exposure_time_key, gain_key=gain_key, rggb_componentwise=rggb_componentwise)
-                write_fits_data(outfile, masterflat)
+                masterflat_header = create_masterheader_from_files(flat_files)
+                write_fits_data(outfile, masterflat, header=masterflat_header)
                 
                 finish_dialog = widgets.QMessageBox(widgets.QMessageBox.Icon.NoIcon, "Done", "The master flat has been created.")
                 finish_dialog.exec()
@@ -375,7 +378,7 @@ if __name__ == "__main__":
                     masterflat = None
                 for i in range(len(light_files)):
                     science = create_science_from_light_file(light_files[i], masterbias=masterbias, masterdark=masterdark, masterflat=masterflat, exposure_time_key=exposure_time_key, gain_key=gain_key, do_sky_subtraction=sky_subtraction, rggb_componentwise=rggb_componentwise)
-                    write_fits_data(outfiles[i], science)
+                    write_fits_data(outfiles[i], science, header=get_fits_header(light_files[i]))
                 
                 finish_dialog = widgets.QMessageBox(widgets.QMessageBox.Icon.NoIcon, "Done", "The sciences have been created.")
                 finish_dialog.exec()
