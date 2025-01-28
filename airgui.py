@@ -1,3 +1,5 @@
+#!/bin/python
+
 if __name__ == "__main__":
     from aircommon import *
     
@@ -139,7 +141,7 @@ if __name__ == "__main__":
             dark_files_selector, self.dark_files = parent.create_files_selector("dark")
             vlayout_files.addLayout(dark_files_selector)
             
-            masterbias_file_selector, self.masterbias_file_lineedit = parent.create_file_selector("Master bias")
+            masterbias_file_selector, self.masterbias_file_lineedit = parent.create_file_selector("Master bias", must_exist=True)
             vlayout_files.addLayout(masterbias_file_selector)
             
             masterdark_file_selector, self.masterdark_file_lineedit = parent.create_file_selector("Master dark")
@@ -252,10 +254,10 @@ if __name__ == "__main__":
             flat_files_selector, self.flat_files = parent.create_files_selector("flat")
             vlayout_files.addLayout(flat_files_selector)
             
-            masterbias_file_selector, self.masterbias_file_lineedit = parent.create_file_selector("Master bias")
+            masterbias_file_selector, self.masterbias_file_lineedit = parent.create_file_selector("Master bias", must_exist=True)
             vlayout_files.addLayout(masterbias_file_selector)
             
-            masterdark_file_selector, self.masterdark_file_lineedit = parent.create_file_selector("Master dark")
+            masterdark_file_selector, self.masterdark_file_lineedit = parent.create_file_selector("Master dark", must_exist=True)
             vlayout_files.addLayout(masterdark_file_selector)
             
             masterflat_file_selector, self.masterflat_file_lineedit = parent.create_file_selector("Master flat")
@@ -393,13 +395,13 @@ if __name__ == "__main__":
             light_files_selector, self.light_files = parent.create_files_selector("light")
             vlayout_files.addLayout(light_files_selector)
             
-            masterbias_file_selector, self.masterbias_file_lineedit = parent.create_file_selector("Master bias")
+            masterbias_file_selector, self.masterbias_file_lineedit = parent.create_file_selector("Master bias", must_exist=True)
             vlayout_files.addLayout(masterbias_file_selector)
             
-            masterdark_file_selector, self.masterdark_file_lineedit = parent.create_file_selector("Master dark")
+            masterdark_file_selector, self.masterdark_file_lineedit = parent.create_file_selector("Master dark", must_exist=True)
             vlayout_files.addLayout(masterdark_file_selector)
             
-            masterflat_file_selector, self.masterflat_file_lineedit = parent.create_file_selector("Master flat")
+            masterflat_file_selector, self.masterflat_file_lineedit = parent.create_file_selector("Master flat", must_exist=True)
             vlayout_files.addLayout(masterflat_file_selector)
             
             science_folder_selector, self.science_folder_lineedit = parent.create_file_selector("Science folder", is_folder=True)
@@ -486,14 +488,14 @@ if __name__ == "__main__":
             hlayout.addStretch(1)
             return hlayout, files
         
-        def create_file_selector(self, filetitle, is_folder=False):
+        def create_file_selector(self, filetitle, is_folder=False, must_exist=False):
             hlayout = widgets.QHBoxLayout()
             label = widgets.QLabel(filetitle)
             hlayout.addWidget(label)
             lineedit = widgets.QLineEdit()
             hlayout.addWidget(lineedit)
             button = widgets.QPushButton("Select folder..." if is_folder else "Select file...")
-            button.clicked.connect(lambda: self.__selectfile_button_onpress(lineedit, is_folder))
+            button.clicked.connect(lambda: self.__selectfile_button_onpress(lineedit, is_folder, must_exist))
             hlayout.addWidget(button)
             hlayout.addStretch(1)
             return hlayout, lineedit
@@ -518,15 +520,18 @@ if __name__ == "__main__":
                 
                 files_ref[:] = files
         
-        def __selectfile_button_onpress(self, lineedit, is_folder):
+        def __selectfile_button_onpress(self, lineedit, is_folder, must_exist):
             file_dialog = widgets.QFileDialog(self)
             if is_folder:
                 file_dialog.setFileMode(widgets.QFileDialog.FileMode.Directory)
                 file_dialog.setViewMode(widgets.QFileDialog.ViewMode.Detail)
             else:
                 file_dialog.setNameFilter(fits_name_filter)
-                file_dialog.setFileMode(widgets.QFileDialog.FileMode.ExistingFile)
-                file_dialog.setAcceptMode(widgets.QFileDialog.AcceptMode.AcceptSave)
+                if must_exist:
+                    file_dialog.setFileMode(widgets.QFileDialog.FileMode.ExistingFile)
+                    file_dialog.setAcceptMode(widgets.QFileDialog.AcceptMode.AcceptOpen)
+                else:
+                    file_dialog.setAcceptMode(widgets.QFileDialog.AcceptMode.AcceptSave)
                 file_dialog.setViewMode(widgets.QFileDialog.ViewMode.Detail)
             
             if file_dialog.exec():
